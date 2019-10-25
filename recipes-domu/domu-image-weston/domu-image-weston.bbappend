@@ -33,6 +33,7 @@ XT_BB_IMAGE_TARGET = "core-image-weston"
 
 XT_QUIRK_PATCH_SRC_URI_rcar = "\
     file://${S}/meta-renesas/meta-rcar-gen3/docs/sample/patch/patch-for-linaro-gcc/0001-rcar-gen3-add-readme-for-building-with-Linaro-Gcc.patch;patchdir=meta-renesas \
+    file://0001-copyscript-Set-GFX-Library-List-to-empty-string.patch;patchdir=meta-renesas \
 "
 
 XT_BB_LOCAL_CONF_FILE_rcar = "meta-xt-prod-extra/doc/local.conf.rcar-domu-image-weston"
@@ -96,6 +97,21 @@ configure_versions_rcar() {
     base_update_conf_value ${local_conf} DEFAULT_TIMEZONE "US/Pacific"
 }
 
+# In order to copy proprietary "multimedia" packages,
+# XT_RCAR_PROPRIETARY_MULTIMEDIA_DIR variable under [local_conf] section in
+# the configuration file should point to the real packages location.
+copy_rcar_proprietary_multimedia() {
+    local local_conf="${S}/build/conf/local.conf"
+
+     if [ ! -z ${XT_RCAR_PROPRIETARY_MULTIMEDIA_DIR} ];then
+        # Populate meta-renesas with proprietary software packages
+        # (according to the https://elinux.org/R-Car/Boards/Yocto-Gen3)
+        cd ${S}/meta-renesas
+        sh meta-rcar-gen3/docs/sample/copyscript/copy_evaproprietary_softwares.sh -f ${XT_RCAR_PROPRIETARY_MULTIMEDIA_DIR}
+    fi
+}
+
 python do_configure_append_rcar() {
     bb.build.exec_func("configure_versions_rcar", d)
+    bb.build.exec_func("copy_rcar_proprietary_multimedia", d)
 }
