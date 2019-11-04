@@ -116,3 +116,39 @@
 &fdp1 {
 	status = "disabled";
 };
+
+&du {
+	clocks = <&cpg CPG_MOD 724>,
+		 <&cpg CPG_MOD 723>,
+		 <&cpg CPG_MOD 722>,
+		 <&cpg CPG_MOD 721>,
+		 <&versaclock5 1>,
+		 <&x21_clk>,
+		 <&x22_clk>,
+		 <&versaclock5 2>,
+		 <&cpg CPG_MOD 619>,
+		 <&cpg CPG_MOD 130>,
+		 <&cpg CPG_MOD 131>,
+		 <&cpg CPG_MOD 626>,
+		 <&cpg CPG_MOD 607>,
+		 <&cpg CPG_MOD 624>,
+		 <&cpg CPG_MOD 606>,
+		 <&cpg CPG_MOD 631>,
+		 <&cpg CPG_MOD 611>,
+		 <&cpg CPG_MOD 630>,
+		 <&cpg CPG_MOD 610>,
+		 <&cpg CPG_MOD 119>,
+		 <&cpg CPG_MOD 615>,
+		 <&cpg CPG_MOD 118>,
+		 <&cpg CPG_MOD 614>;
+
+	clock-names = "du.0", "du.1", "du.2", "du.3",
+		      "dclkin.0", "dclkin.1", "dclkin.2", "dclkin.3",
+		      "fcpcs", "vcplf", "vdpb",
+		      "vspbd_vsp", "vspbd_fcp",
+		      "vspbc_vsp", "vspbc_fcp",
+		      "vspi0_vsp", "vspi0_fcp",
+		      "vspi1_vsp", "vspi1_fcp",
+		      "fdp0_vsp", "fdp0_fcp",
+		      "fdp1_vsp", "fdp1_fcp";
+};
