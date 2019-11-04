@@ -1,0 +1,87 @@
+From b2c9ffd8c30fa6d6728601f8b81011c187ce54d0 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 4 Nov 2019 17:31:08 +0200
+Subject: [PATCH] Enable VCP4/VSP/FDP related clocks in a hackish way
+
+Ask R-Car DU in DomD to explicitly enable these resources (if they
+are described in DT) as UVCS/VSPM modules in DomU don't control them.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ drivers/gpu/drm/rcar-du/rcar_du_crtc.c | 53 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
+index 5656d1d..c11a54e 100644
+--- a/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
++++ b/drivers/gpu/drm/rcar-du/rcar_du_crtc.c
+@@ -1031,6 +1031,7 @@ int rcar_du_crtc_create(struct rcar_du_group *rgrp, unsigned int swindex,
+ 	char *name;
+ 	int irq;
+ 	int ret;
++	static int setup_mm = false;
+ 
+ 	/* Get the CRTC clock and the optional external clock. */
+ 	if (rcar_du_has(rcdu, RCAR_DU_FEATURE_CRTC_IRQ_CLOCK)) {
+@@ -1055,6 +1056,58 @@ int rcar_du_crtc_create(struct rcar_du_group *rgrp, unsigned int swindex,
+ 		return -EPROBE_DEFER;
+ 	}
+ 
++	if (!setup_mm) {
++		char *vcp4_clk_names[] = {
++			"fcpcs",
++			"vcplf",
++			"vdpb"
++		},
++		*vspm_clk_names[] = {
++			"vspbd_vsp", "vspbd_fcp",
++			"vspbc_vsp", "vspbc_fcp",
++			"vspi0_vsp", "vspi0_fcp",
++			"vspi1_vsp", "vspi1_fcp",
++			"fdp0_vsp", "fdp0_fcp",
++			"fdp1_vsp", "fdp1_fcp"
++		};
++		int i;
++
++		for (i = 0; i < ARRAY_SIZE(vcp4_clk_names); i++) {
++			clk = devm_clk_get(&pdev->dev, vcp4_clk_names[i]);
++			if (IS_ERR(clk)) {
++				dev_err(rcdu->dev,"Cannot get %s clock\n", vcp4_clk_names[i]);
++				continue;
++			}
++
++			ret = clk_prepare_enable(clk);
++			if (ret < 0) {
++				dev_err(rcdu->dev, "clk_prepare_enable for %s clock failed\n");
++				goto out;
++			}
++
++			dev_info(rcdu->dev, "Enabled %s clock\n", vcp4_clk_names[i]);
++		}
++
++		for (i = 0; i < ARRAY_SIZE(vspm_clk_names); i++) {
++			clk = devm_clk_get(&pdev->dev, vspm_clk_names[i]);
++			if (IS_ERR(clk)) {
++				dev_err(rcdu->dev,"Cannot get %s clock\n", vspm_clk_names[i]);
++				continue;
++			}
++
++			ret = clk_prepare_enable(clk);
++			if (ret < 0) {
++				dev_err(rcdu->dev, "clk_prepare_enable for %s clock failed\n");
++				goto out;
++			}
++
++			dev_info(rcdu->dev, "Enabled %s clock\n", vspm_clk_names[i]);
++		}
++
++		setup_mm = true;
++	}
++
++out:
+ 	init_waitqueue_head(&rcrtc->flip_wait);
+ 	init_waitqueue_head(&rcrtc->vblank_wait);
+ 	spin_lock_init(&rcrtc->vblank_lock);
+-- 
+2.7.4
+

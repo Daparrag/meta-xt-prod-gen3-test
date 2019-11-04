@@ -9,6 +9,7 @@ SRCREV = "f5bc6639cf2c06db82da7c61ee521d554af77f12"
 LINUX_VERSION = "4.14.75"
 SRC_URI_append = " \
     file://defconfig \
+    file://0001-Enable-VCP4-VSP-FDP-related-clocks-in-a-hackish-way.patch \
 "
 
 SRC_URI_append_rcar = " \
