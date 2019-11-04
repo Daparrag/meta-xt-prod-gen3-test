@@ -1,0 +1,206 @@
+From 9b46fb1f47ddcc4cca645b1be1122edc6f764182 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 4 Nov 2019 12:50:06 +0200
+Subject: [PATCH 1/2] kernel-module-uvcs-drv: Do not control device's PM
+
+All related clocks are controlled by DomD, so do not touch them here.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ .../kernel-module-uvcs/kernel-module-uvcs-drv.bb   |   4 +-
+ .../0001-Do-not-control-device-s-PM.patch          | 168 +++++++++++++++++++++
+ 2 files changed, 171 insertions(+), 1 deletion(-)
+ create mode 100644 meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv/0001-Do-not-control-device-s-PM.patch
+
+diff --git a/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv.bb b/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv.bb
+index 6d0b9f6..a7b218e 100644
+--- a/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv.bb
++++ b/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv.bb
+@@ -16,7 +16,9 @@ require include/rcar-gen3-path-common.inc
+ inherit module
+ PR = "r0"
+ 
+-SRC_URI = "${@oe.utils.conditional('USE_VIDEO_OMX', '1', 'file://RCG3VUDRL4101ZDO.tar.bz2', '', d)}"
++SRC_URI = "${@oe.utils.conditional('USE_VIDEO_OMX', '1', 'file://RCG3VUDRL4101ZDO.tar.bz2', '', d)} \
++    file://0001-Do-not-control-device-s-PM.patch \
++"
+ 
+ S = "${WORKDIR}/RCG3VUDRL4101ZDO"
+ 
+diff --git a/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv/0001-Do-not-control-device-s-PM.patch b/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv/0001-Do-not-control-device-s-PM.patch
+new file mode 100644
+index 0000000..f341a5f
+--- /dev/null
++++ b/meta-rcar-gen3/recipes-kernel/kernel-module-uvcs/kernel-module-uvcs-drv/0001-Do-not-control-device-s-PM.patch
+@@ -0,0 +1,168 @@
++From 0f8739b32014d70a8737f3f5b626b377a4abeccc Mon Sep 17 00:00:00 2001
++From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
++Date: Mon, 4 Nov 2019 15:34:48 +0200
++Subject: [PATCH] Do not control device's PM
++
++All related clocks are controlled by DomD, so do not touch them here.
++
++Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
++---
++ src/lkm/uvcs_lkm.c       |  2 ++
++ src/lkm/uvcs_lkm_uf_io.c | 75 ++----------------------------------------------
++ 2 files changed, 5 insertions(+), 72 deletions(-)
++
++diff --git a/src/lkm/uvcs_lkm.c b/src/lkm/uvcs_lkm.c
++index 82eed05..bf46672 100644
++--- a/src/lkm/uvcs_lkm.c
+++++ b/src/lkm/uvcs_lkm.c
++@@ -739,6 +739,8 @@ static int uvcs_dev_probe(struct platform_device *pdev)
++ 	platform_set_drvdata(pdev, uvcsdrv);
++ 	uvcsdrv->devnum++;
++ 
+++	dev_info(&pdev->dev, "Device's PM is not controlled\n");
+++
++ 	return 0;
++ 
++ err_exit:
++diff --git a/src/lkm/uvcs_lkm_uf_io.c b/src/lkm/uvcs_lkm_uf_io.c
++index 34bdb16..dec8d0a 100644
++--- a/src/lkm/uvcs_lkm_uf_io.c
+++++ b/src/lkm/uvcs_lkm_uf_io.c
++@@ -149,8 +149,6 @@ static void uvcs_ce_timer_handler(unsigned long data);
++ 
++ static int uvcs_vcp_request_irq(struct platform_device *pdev);
++ static void uvcs_vcp_free_irq(struct platform_device *pdev);
++-static int uvcs_clock_power_enable(struct platform_device *pdev);
++-static void uvcs_clock_power_disable(struct platform_device *pdev);
++ static void uvcs_get_lsi_info(struct uvcs_driver_info *drv);
++ 
++ 
++@@ -475,7 +473,7 @@ static void uvcs_hw_reset(
++ }
++ 
++ /**
++- * \brief Iniailize IO layer. Acquire IRQ, Enable power and clock
+++ * \brief Iniailize IO layer. Acquire IRQ
++  *
++  * \retval 0		success
++  * \retval other	error
++@@ -487,21 +485,11 @@ int uvcs_io_init(
++ 	int result = -EFAULT;
++ 	UVCS_RESULT uvcs_result;
++ 	UVCS_CMN_INIT_PARAM_T *iparam;
++-	u32 actnum;
++ 	u32 i;
++ 
++ 	if (!drv)
++ 		goto err_exit_0;
++ 
++-	/* power */
++-	for (actnum = 0; actnum < drv->vcp_devnum + drv->fcp_devnum; actnum++) {
++-		result = uvcs_clock_power_enable(drv->pdev[actnum]);
++-		if (result) {
++-			pr_err("pm failed (id = %d)\n", actnum);
++-			goto err_exit_1;
++-		}
++-	}
++-
++ 	uvcs_get_lsi_info(drv);
++ 
++ 	iparam = &drv->uvcs_init_param;
++@@ -582,7 +570,7 @@ int uvcs_io_init(
++ 	if (uvcs_result != UVCS_RTN_OK) {
++ 		result = -EFAULT;
++ 		pr_err("failed to initialize %d\n", uvcs_result);
++-		goto err_exit_1;
+++		goto err_exit_0;
++ 	}
++ 
++ 	drv->ip_info.struct_size = sizeof(UVCS_CMN_IP_INFO_T);
++@@ -629,17 +617,13 @@ err_exit_3:
++ err_exit_2:
++ 	uvcs_cmn_deinitialize(drv->uvcs_info, UVCS_TRUE);
++ 
++-err_exit_1:
++-	for (; actnum > 0; actnum--)
++-		uvcs_clock_power_disable(drv->pdev[actnum - 1u]);
++-
++ err_exit_0:
++ 	return result;
++ }
++ 
++ 
++ /**
++- * \brief Deinitialize driver (release IRQ, Disable power and clock)
+++ * \brief Deinitialize driver (release IRQ)
++  */
++ void uvcs_io_deinit(
++ 	struct uvcs_driver_info *drv /**< [in] driver information */
++@@ -651,8 +635,6 @@ void uvcs_io_deinit(
++ 		for (i = drv->vcp_devnum; i > 0; i--)
++ 			uvcs_vcp_free_irq(drv->vcpinf[i - 1u].pdev);
++ 		uvcs_cmn_deinitialize(drv->uvcs_info, UVCS_TRUE);
++-		for (i = drv->vcp_devnum + drv->fcp_devnum; i > 0; i--)
++-			uvcs_clock_power_disable(drv->pdev[i - 1u]);
++ 	}
++ 
++ 	driver_info = NULL;
++@@ -773,57 +755,6 @@ static void uvcs_vcp_free_irq(
++ }
++ 
++ /******************************************************************************/
++-/*              power management                                              */
++-/******************************************************************************/
++-/**
++- * \brief turn on power and clock
++- *
++- * \retval 0		success
++- * \retval other	failed
++- */
++-static int uvcs_clock_power_enable(
++-	struct platform_device *pdev /**< [in] target platform device */
++-	)
++-{
++-	struct uvcs_platform_data *pdata;
++-	int result = -EFAULT;
++-
++-	if ((pdev == NULL)
++-	||	(pdev->dev.platform_data == NULL))
++-		goto err_exit_0;
++-
++-	pdata = pdev->dev.platform_data;
++-	if ((pdata == NULL)
++-	||	(pdata->hwinf == NULL))
++-		goto err_exit_0;
++-
++-	result = pm_runtime_get_sync(&pdev->dev);
++-
++-err_exit_0:
++-	return result;
++-}
++-
++-/**
++- * \brief turn off power and clock
++- */
++-static void uvcs_clock_power_disable(
++-	struct platform_device *pdev /**< [in] target platform device */
++-	)
++-{
++-	struct uvcs_platform_data *pdata;
++-
++-	if ((pdev == NULL)
++-	||	(pdev->dev.platform_data == NULL))
++-		return;
++-
++-	pdata = pdev->dev.platform_data;
++-	if (pdata->hwinf == NULL)
++-		return;
++-
++-	pm_runtime_put_sync(&pdev->dev);
++-}
++-
++-/******************************************************************************/
++ /*              resource (DT)                                                 */
++ /******************************************************************************/
++ /**
++-- 
++2.7.4
++
+-- 
+2.7.4
+

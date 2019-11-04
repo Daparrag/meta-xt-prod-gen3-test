@@ -36,6 +36,7 @@ XT_QUIRK_PATCH_SRC_URI_rcar = "\
     file://0001-copyscript-Set-GFX-Library-List-to-empty-string.patch;patchdir=meta-renesas \
     file://0001-Add-vspfilter-config-for-salvator-x-4x2g-machine.patch;patchdir=meta-renesas \
     file://0001-recipes-kernel-Load-multimedia-related-modules-autom.patch;patchdir=meta-renesas \
+    file://0001-kernel-module-uvcs-drv-Do-not-control-device-s-PM.patch;patchdir=meta-renesas \
 "
 
 XT_BB_LOCAL_CONF_FILE_rcar = "meta-xt-prod-extra/doc/local.conf.rcar-domu-image-weston"
