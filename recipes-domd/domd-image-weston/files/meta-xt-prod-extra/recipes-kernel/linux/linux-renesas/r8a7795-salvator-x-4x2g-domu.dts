@@ -7,6 +7,46 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/* device specific region for Lossy Decompression */
+		lossy_decompress: linux,lossy_decompress@54000000 {
+			no-map;
+			reg = <0x00000000 0x54000000 0x0 0x03000000>;
+		};
+
+		/* global autoconfigured region for contiguous allocations */
+		linux,cma@58000000 {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x00000000 0x58000000 0x0 0x18000000>;
+			linux,cma-default;
+		};
+
+		/* device specific region for contiguous allocations */
+		mmp_reserved: linux,multimedia@70000000 {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x00000000 0x70000000 0x0 0x10000000>;
+		};
+	};
+
+	vspm_if {
+		compatible = "renesas,vspm_if";
+	};
+
+	mmngr {
+		compatible = "renesas,mmngr";
+		memory-region = <&mmp_reserved>, <&lossy_decompress>;
+	};
+
+	mmngrbuf {
+		compatible = "renesas,mmngrbuf";
+	};
+
 	passthrough {
 		compatible = "simple-bus";
 		ranges;
@@ -17,6 +57,223 @@
 			compatible = "renesas,gsx";
 			reg = <0 0xfd000000 0 0x3ffff>;
 			interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		fcpcs: vcp4@fe90f000 {
+			compatible = "renesas,vcp4-fcpcs";
+			reg = <0 0xfe90f000 0 0x200>;
+			/*clocks = <&cpg CPG_MOD 619>;*/
+			/*power-domains = <&sysc R8A7795_PD_A3VC>;*/
+			/*resets = <&cpg 619>;*/
+			renesas,#ch = <0>;
+		};
+
+		ivdp1c: vcp4@fe8d0000 {
+			compatible = "renesas,vcp4-ivdp1c";
+			reg = <0 0xfe8d0000 0 0x200>, <0 0xfe8d0200 0 0x200>;
+			interrupts = <GIC_SPI 380 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 223 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 130>;*/
+			/*power-domains = <&sysc R8A7795_PD_A2VC1>;*/
+			/*resets = <&cpg 130>;*/
+			renesas,#ch = <2>;
+			renesas,#fcp_ch = <0>;
+		};
+
+		vcplf: vcp4@fe910000 {
+			compatible = "renesas,vcp4-vcplf";
+			reg = <0 0xfe910000 0 0x200>, <0 0xfe910200 0 0x200>;
+			interrupts = <GIC_SPI 260 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 261 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 130>;*/
+			/*power-domains = <&sysc R8A7795_PD_A2VC1>;*/
+			/*resets = <&cpg 130>;*/
+			renesas,#ch = <0>;
+			renesas,#fcp_ch = <0>;
+		};
+
+		vdpb: vcp4@fe900000 {
+			compatible = "renesas,vcp4-vdpb";
+			reg = <0 0xfe900000 0 0x200>, <0 0xfe900200 0 0x200>;
+			interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 131>;*/
+			/*power-domains = <&sysc R8A7795_PD_A2VC1>;*/
+			/*resets = <&cpg 131>;*/
+			renesas,#ch = <1>;
+			renesas,#fcp_ch = <0>;
+		};
+
+		vsp@fe960000 {
+			compatible = "renesas,vspm-vsp2";
+			reg = <0 0xfe960000 0 0x8000>;
+			renesas,has-bru;
+			renesas,#rpf = <5>;
+			renesas,#uds = <0>;
+			renesas,#wpf = <1>;
+		};
+
+		vspbd: vspm@fe960000 {
+			compatible = "renesas,vspm";
+			reg = <0 0xfe960000 0 0x8000>, <0 0xfe96f000 0 0x200>;
+			interrupts = <GIC_SPI 266 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 626>, <&cpg CPG_MOD 607>;*/
+			/*clock-names = "vsp", "fcp";*/
+			renesas,#ch = <3>;
+			renesas,#rpf = <31>;
+			renesas,#rpf_clut = <6>;
+			renesas,#wpf_rot = <0>;
+			renesas,has-bru;
+			renesas,#read_outstanding = <0>;
+			renesas,#start_reservation = <2>;
+			renesas,#burst_access = <0>;
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 626>, <&cpg 607>;*/
+			/*reset-names = "vsp", "fcp";*/
+			/*status = "disabled";*/
+		};
+
+		vsp@fe920000 {
+			compatible = "renesas,vspm-vsp2";
+			reg = <0 0xfe920000 0 0x8000>;
+			renesas,has-bru;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hgo;
+			renesas,#rpf = <5>;
+			renesas,#uds = <0>;
+			renesas,#wpf = <1>;
+		};
+
+		vspbc: vspm@fe920000 {
+			compatible = "renesas,vspm";
+			reg = <0 0xfe920000 0 0x8000>, <0 0xfe92f000 0 0x200>;
+			interrupts = <GIC_SPI 465 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 624>, <&cpg CPG_MOD 606>;*/
+			/*clock-names = "vsp", "fcp";*/
+			renesas,#ch = <4>;
+			renesas,#rpf = <31>;
+			renesas,#rpf_clut = <6>;
+			renesas,#wpf_rot = <0>;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hgo;
+			renesas,has-bru;
+			renesas,#read_outstanding = <0>;
+			renesas,#start_reservation = <2>;
+			renesas,#burst_access = <1>;
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 624>, <&cpg 606>;*/
+			/*reset-names = "vsp", "fcp";*/
+			/*status = "disabled";*/
+		};
+
+		vsp@fe9a0000 {
+			compatible = "renesas,vspm-vsp2";
+			reg = <0 0xfe9a0000 0 0x8000>;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hgo;
+			renesas,has-hgt;
+			renesas,#rpf = <1>;
+			renesas,#uds = <1>;
+			renesas,#wpf = <1>;
+		};
+
+		vspi0: vspm@fe9a0000 {
+			compatible = "renesas,vspm";
+			reg = <0 0xfe9a0000 0 0x8000>, <0 0xfe9af000 0 0x200>;
+			interrupts = <GIC_SPI 444 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 631>, <&cpg CPG_MOD 611>;*/
+			/*clock-names = "vsp", "fcp";*/
+			renesas,#ch = <0>;
+			renesas,#rpf = <1>;
+			renesas,#rpf_clut = <1>;
+			renesas,#wpf_rot = <1>;
+			renesas,has-sru;
+			renesas,has-uds;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hst;
+			renesas,has-hsi;
+			renesas,has-hgo;
+			renesas,has-hgt;
+			renesas,has-shp;
+			renesas,#read_outstanding = <2>;
+			renesas,#start_reservation = <2>;
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 631>, <&cpg 611>;*/
+			/*reset-names = "vsp", "fcp";*/
+			/*status = "disabled";*/
+		};
+
+		vsp@fe9b0000 {
+			compatible = "renesas,vspm-vsp2";
+			reg = <0 0xfe9b0000 0 0x8000>;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hgo;
+			renesas,has-hgt;
+			renesas,#rpf = <1>;
+			renesas,#uds = <1>;
+			renesas,#wpf = <1>;
+		};
+
+		vspi1: vspm@fe9b0000 {
+			compatible = "renesas,vspm";
+			reg = <0 0xfe9b0000 0 0x8000>, <0 0xfe9bf000 0 0x200>;
+			interrupts = <GIC_SPI 445 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 630>, <&cpg CPG_MOD 610>;*/
+			/*clock-names = "vsp", "fcp";*/
+			renesas,#ch = <1>;
+			renesas,#rpf = <1>;
+			renesas,#rpf_clut = <1>;
+			renesas,#wpf_rot = <1>;
+			renesas,has-sru;
+			renesas,has-uds;
+			renesas,has-lut;
+			renesas,has-clu;
+			renesas,has-hst;
+			renesas,has-hsi;
+			renesas,has-hgo;
+			renesas,has-hgt;
+			renesas,has-shp;
+			renesas,#read_outstanding = <2>;
+			renesas,#start_reservation = <2>;
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 630>, <&cpg 610>;*/
+			/*reset-names = "vsp", "fcp";*/
+			/*status = "disabled";*/
+		};
+
+		fdp0: fdpm@fe940000 {
+			compatible = "renesas,fdpm";
+			reg = <0 0xfe940000 0 0x2400>, <0 0xfe950000 0 0x200>;
+			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 119>, <&cpg CPG_MOD 615>;*/
+			/*clock-names = "fdp", "fcp";*/
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 119>, <&cpg 615>;*/
+			/*reset-names = "fdp", "fcp";*/
+			renesas,#ch = <0>;
+		};
+
+		fdp1: fdpm@fe944000 {
+			compatible = "renesas,fdpm";
+			reg = <0 0xfe944000 0 0x2400>, <0 0xfe951000 0 0x200>;
+			interrupts = <GIC_SPI 263 IRQ_TYPE_LEVEL_HIGH>;
+			/*clocks = <&cpg CPG_MOD 118>, <&cpg CPG_MOD 614>;*/
+			/*clock-names = "fdp", "fcp";*/
+			/*power-domains = <&sysc R8A7795_PD_A3VP>;*/
+			/*resets = <&cpg 118>, <&cpg 614>;*/
+			/*reset-names = "fdp", "fcp";*/
+			renesas,#ch = <1>;
+		};
+
+		prr: chipid@fff00044 {
+			compatible = "renesas,prr";
+			reg = <0 0xfff00044 0 4>;
 		};
 	};
 };

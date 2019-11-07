@@ -80,3 +80,39 @@
 &sound_card {
 	dais = <&rsnd_port0>; /* ak4613 */
 };
+
+&ivdp1c {
+	status = "disabled";
+};
+
+&vcplf {
+	status = "disabled";
+};
+
+&vdpb {
+	status = "disabled";
+};
+
+&vspbc {
+	status = "disabled";
+};
+
+&vspbd {
+	status = "disabled";
+};
+
+&vspi0 {
+	status = "disabled";
+};
+
+&vspi1 {
+	status = "disabled";
+};
+
+&fdp0 {
+	status = "disabled";
+};
+
+&fdp1 {
+	status = "disabled";
+};
