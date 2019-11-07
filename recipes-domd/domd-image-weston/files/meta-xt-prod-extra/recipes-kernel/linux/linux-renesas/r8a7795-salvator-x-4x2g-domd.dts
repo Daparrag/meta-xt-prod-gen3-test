@@ -151,4 +151,6 @@
 		      "vspi1_vsp", "vspi1_fcp",
 		      "fdp0_vsp", "fdp0_fcp",
 		      "fdp1_vsp", "fdp1_fcp";
+
+	power-domains = <&sysc R8A7795_PD_A2VC1>;
 };
