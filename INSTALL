@@ -125,7 +125,6 @@ Hereafter the supported MACHINE_NAMEs are:
 - salvator-x-h3-4x2g (Salvator-X board with H3 ES3.0 SoC installed)
 - salvator-x-m3  (Salvator-X board with M3 SoC installed)
 - salvator-xs-h3  (Salvator-XS board with H3 ES2.0 SoC installed)
-- salvator-xs-h3-2x2g (Salvator-XS board with H3 ES3.0 SoC installed)
 - salvator-xs-h3-4x2g (Salvator-XS board with H3 ES3.0 SoC installed)
 - salvator-xs-m3n (Salvator-XS board with M3N SoC installed)
 - h3ulcb (H3ULCB board with H3 ES2.0 SoC installed)
